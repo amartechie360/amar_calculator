@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Amar Calculator</title>
+  <p> <pre> 
+
+
+                                                                                                            Amar Calculator 
+  </pre></p>
+<style>
+    :root{--bg:#d8dbe2;--panel:#0f1724;--btn:#e6eef8;--accent:#2563eb}
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans',sans-serif}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071027,#0a1220);color:var(--btn)}
+    .wrap{max-width:420px;margin:28px auto;padding:18px}
+    .calc{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(2,6,23,0.5)}
+    .display{height:72px;background:var(--panel);border-radius:10px;padding:10px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;color:#e6eef8;overflow:hidden}
+    .expr{font-size:13px;opacity:.7;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;width:100%}
+    .value{font-size:28px;font-weight:600;margin-top:6px;word-break:break-all}
+    .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    button{height:56px;border-radius:10px;border:0;font-size:18px;background:#0b1526;color:var(--btn);cursor:pointer}
+    button.op{background:#0e2a5a;color:#fff}
+    button.span2{grid-column:span 2}
+    button.clear{background:#7b1b1b}
+    button.equal{background:var(--accent);grid-column:span 2}
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px;opacity:.7;margin-top:10px;text-align:center}
+    @media(max-width:420px){.wrap{margin:12px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="calc" aria-label="Simple Calculator">
+      <div class="display" role="region" aria-live="polite">
+        <div class="expr" id="expr">&nbsp;</div>
+        <div class="value" id="value">0</div>
+      </div>
+
+      <div class="keys" role="group" aria-label="calculator keys">
+        <button class="clear" id="clear">C</button>
+        <button id="back">⌫</button>
+        <button id="percent">%</button>
+        <button class="op" data-op="/">÷</button>
+
+        <button data-num="7">7</button>
+        <button data-num="8">8</button>
+        <button data-num="9">9</button>
+        <button class="op" data-op="*">×</button>
+
+        <button data-num="4">4</button>
+        <button data-num="5">5</button>
+        <button data-num="6">6</button>
+        <button class="op" data-op="-">−</button>
+
+        <button data-num="1">1</button>
+        <button data-num="2">2</button>
+        <button data-num="3">3</button>
+        <button class="op" data-op="+">+</button>
+
+        <button data-num="0" class="span2">0</button>
+        <button id="dot">.</button>
+        <button class="equal" id="equals">=</button>
+      </div>
+
+      <div class="hint">Keyboard supported: numbers, + - * / % . Enter = evaluate</div>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      const exprEl = document.getElementById('expr');
+      const valueEl = document.getElementById('value');
+      let expr = '';
+
+      const setDisplay = ()=>{
+        exprEl.textContent = expr || '\u00A0';
+        valueEl.textContent = expr ? expr.slice(-40) : '0';
+      };
+
+      function append(char){
+        // avoid multiple dots in same number
+        if(char === '.' && /\.[0-9]*$/.test(expr)) return;
+        expr += char;
+        setDisplay();
+      }
+
+      function backspace(){ expr = expr.slice(0,-1); setDisplay(); }
+      function clearAll(){ expr = ''; setDisplay(); }
+
+      function safeEvaluate(s){
+        if(!/^[0-9()+\-*/.%\s]*$/.test(s)) throw new Error('Invalid characters');
+        s = s.replace(/×/g,'*').replace(/÷/g,'/');
+        s = s.replace(/(\d+(?:\.\d+)?)%/g,'($1/100)');
+        return Function('return (' + s + ')')();
+      }
+
+      document.querySelectorAll('[data-num]').forEach(btn=>btn.addEventListener('click',e=>append(e.target.dataset.num)));
+      document.querySelectorAll('[data-op]').forEach(btn=>btn.addEventListener('click',e=>append(e.target.dataset.op)));
+      document.getElementById('dot').addEventListener('click',()=>append('.'));
+      document.getElementById('clear').addEventListener('click',clearAll);
+      document.getElementById('back').addEventListener('click',backspace);
+      document.getElementById('percent').addEventListener('click',()=>append('%'));
+
+      document.getElementById('equals').addEventListener('click',()=>{
+        try{
+          const res = safeEvaluate(expr);
+          expr = String(Number.isFinite(res) ? +res : res);
+        }catch(e){
+          expr = 'Error';
+        }
+        setDisplay();
+        if(expr === 'Error') setTimeout(()=>{ expr=''; setDisplay(); },900);
+      });
+
+      // Keyboard support (useful when testing in emulator)
+      window.addEventListener('keydown', (ev)=>{
+        if(ev.key >= '0' && ev.key <= '9') { append(ev.key); ev.preventDefault(); return; }
+        if(['+','-','*','/','(',')','%'].includes(ev.key)){ append(ev.key); ev.preventDefault(); return; }
+        if(ev.key === '.') { append('.'); ev.preventDefault(); return; }
+        if(ev.key === 'Enter' || ev.key === '='){ document.getElementById('equals').click(); ev.preventDefault(); return; }
+        if(ev.key === 'Backspace'){ backspace(); ev.preventDefault(); return; }
+        if(ev.key === 'Escape'){ clearAll(); ev.preventDefault(); return; }
+      });
+
+      setDisplay();
+    })();
+  </script>
+</body>
+</html>
